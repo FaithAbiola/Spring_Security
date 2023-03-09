@@ -38,7 +38,7 @@ public class JwtService {
                 .builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setIssuedAt(new Date(System.currentTimeMillis()))// i.e when the claim was created, and it will help to calculate the expiration date or if the token is still valid
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24)) //Token will be valid for 24hours + 1000milliseconds
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256) // The key to use to sign in the token
                 .compact(); //compact will generate and return the token

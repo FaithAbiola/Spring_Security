@@ -6,9 +6,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -40,9 +42,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {// to check if the user is already authenticated or not. If the getAuthentication is null it means the user is not authenticated
             //After that we need to get the user from the database, by creating an object called userDetails
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-
-
+            //Next step is to validate and check if the token is still valid
+            if (jwtService.isTokenValid(jwt, userDetails)) {
+                // if the token is valid , update the security context and send the request to the dispatcher servlet, then create an object of type username password authentication token
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null, // this is null because the user does not have credentials
+                        userDetails.getAuthorities()
+                ); // it is needed by the security context holder in order to update the security context
+                //After instantiating the usernameAuthenticationToken, give it more details by using auth token
+                authToken.setDetails(// extend the auth token with the details of the request
+                        new WebAuthenticationDetailsSource().buildDetails(request) // Then build the details out of the HTTP request of
+                );
+                //Final step is to update the auth token using security context holder
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
         }
-
+        filterChain.doFilter(request, response); // after the if statement always call the filterchain to pass the hand to the next filter to be executed
     }
 }
+
+// AFTER THIS PROCESS, TELL SPRING WHICH CONFIGURATION TO BE USED IN ORDER TO MAKE ALL THIS WORK, WE NEED TO BIND, THE FILTER NEEDS TO BE USED BY CREATING A NEW CONFIGURATION CLASS
